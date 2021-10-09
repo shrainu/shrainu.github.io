@@ -24,6 +24,10 @@ const drawBall = (x, y, r, color) => {
     ctx.stroke();
 };
 
+function mailtome() {
+    window.open('mailto:batuhanyigit1705@gmail.com');
+}
+
 canvas.addEventListener("keydown", function(e){
     if (e.keyCode == 65) {
         ball.keys.LEFT = true;
