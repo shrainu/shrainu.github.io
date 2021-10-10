@@ -3,8 +3,8 @@
     font-family: Helvetica;
     font-weight: bold;
     font-size: 120%;
-    text-shadow: -1px -1px 0 rgb(243, 132, 245), 1px -1px 0 rgb(243, 132, 245), -1px 1px 0 rgb(243, 132, 245), 1px 1px 0 rgb(243, 132, 245);
-    color: rgb(188, 103, 190);
+    text-shadow: -1px -1px 0 rgb(200 160 255), 1px -1px 0 rgb(200 160 255), -1px 1px 0 rgb(200 160 255), 1px 1px 0 rgb(200 160 255);
+    color: rgb(141 103 190);
 }
 
 
@@ -17,8 +17,8 @@ footer {
     font-family: Helvetica, sans-serif;
     width: 640px;
     /*background-image: linear-gradient(rgb(51, 9, 49), rgb(10, 10, 10));*/
-    background-color: rgb(162, 85, 163);
-    border: 1px solid rgb(243, 132, 245);
+    background-color: rgb(141 103 190);
+    border: 1px solid rgb(200 160 255);
 }
 footer div.footer-div {
     text-align: left;
@@ -46,17 +46,17 @@ footer .footer-div a {
 
 nav {
     display: table;
-    border: 1px solid rgb(243, 132, 245);
-	margin: 0 auto;
+    border: 1px solid rgb(200 160 255);
+    margin: 0 auto;
 }
 @media screen and (min-width: 480px) {
     body {
-        background-image: linear-gradient(rgb(51, 9, 49), rgb(10, 10, 10));
+        background-image: linear-gradient(rgb(48 11 66), rgb(10, 10, 10));
         height: 100vh;
     }
 }
 nav div {
-    background-color: rgb(162, 85, 163);
+    background-color: rgb(141 103 190);
     margin: 0 auto;
     min-width: 640px;
 }
@@ -84,7 +84,7 @@ ul#horizontal-list li {
 
 
 #canvas {
-    border: 1px solid rgb(150, 102, 151);
+    border: 1px solid rgb(141 103 190);
     display: block;
     margin: 0 auto;
     margin-top: 20px;
