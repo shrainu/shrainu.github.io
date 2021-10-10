@@ -1,9 +1,34 @@
+
 // Site
+// ================================================ ##
+
 function mailtome() {
     window.open('mailto:batuhanyigit1705@gmail.com');
 }
 
+// ================================================ ##
+
 // Game
+// ================================================ ##
+
+// Global Variables
+// Graphics
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+// Physics
+const friction = 0.1;
+const elasticity = 1;
+// Input
+const input = {
+    keys : {
+        LEFT : false,
+        RIGHT : false,
+        UP : false,
+        DOWN : false,
+    }
+}
+
+
 function round(number, precision) {
     let factor = 10**precision;
     return Math.round(number * factor) / factor;
@@ -19,21 +44,35 @@ function ballCollisionResponse(b1, b2) {
      
     let distanceVec = b1.pos.subtract(b2.pos);
     let collisionDepth = b1.r + b2.r - distanceVec.mag();
-    let collisionResponse = distanceVec.normalized().multiply(collisionDepth / 2);
-    b1.pos = b1.pos.add(collisionResponse);
-    b2.pos = b2.pos.add(collisionResponse.multiply(-1));
+    let collisionResponse = distanceVec.normalized().multiply(collisionDepth / (b1.invMass + b2.invMass));
+    b1.pos = b1.pos.add(collisionResponse.multiply(b1.invMass));
+    b2.pos = b2.pos.add(collisionResponse.multiply(-b2.invMass));
 }
 
-const canvas = document.getElementById("canvas");
-const ctx = canvas.getContext("2d");
+function ballCollisionResolution(b1, b2) {
 
-const input = {
-    keys : {
-        LEFT : false,
-        RIGHT : false,
-        UP : false,
-        DOWN : false,
-    }
+    let normal = b1.pos.subtract(b2.pos).normalized();
+    let relVel = b1.vel.subtract(b2.vel);
+    let sepVel = Vector2.dot(relVel, normal);
+    let newSepVel = -sepVel * elasticity;
+
+    let velSepDiff = newSepVel - sepVel;
+    let impulse = velSepDiff / (b1.invMass + b2.invMass);
+    let impulseVec = normal.multiply(impulse);
+
+    b1.vel = b1.vel.add(impulseVec.multiply(b1.invMass));
+    b2.vel = b2.vel.add(impulseVec.multiply(-b2.invMass));
+}
+
+function keepBallInBounds(element) {
+    if (element.pos.x + element.r > canvas.clientWidth)
+        element.pos.x = canvas.clientWidth - element.r;
+    else if (element.pos.x - element.r < 0)
+        element.pos.x = element.r;
+    if (element.pos.y + element.r > canvas.clientHeight)
+        element.pos.y = canvas.clientHeight - element.r;
+    else if (element.pos.y - element.r < 0)
+        element.pos.y = element.r;
 }
 
 class Vector2 {
@@ -83,14 +122,17 @@ class Ball {
 
     static balls = [];
 
-    constructor(x, y, r, color) {
+    constructor(x, y, r, color, mass = -1) {
 
         this.r = r;
         this.color = color;
         this.pos = new Vector2(x, y);
         this.vel = new Vector2(0, 0);
         this.acc = new Vector2(0, 0);
-        this.acceleration = 2;
+        this.acceleration = 1.5;
+
+        this.mass = (mass < 0) ? (r ** 2) / 10 : mass;
+        this.invMass = (mass == 0) ? 0 : 1 / this.mass;
 
         Ball.balls.push(this);
     }
@@ -118,6 +160,14 @@ class Ball {
         ctx.arc(center.x, center.y, displayRadius, 0, 2 * Math.PI);
         ctx.strokeStyle = "black";
         ctx.stroke();
+    }
+
+    reposition() {
+
+        this.acc = this.acc.normalized().multiply(this.acceleration);
+        this.vel = this.vel.add(this.acc);
+        this.vel = this.vel.multiply(1-friction);
+        this.pos = this.pos.add(this.vel);
     }
 }
 
@@ -152,7 +202,6 @@ canvas.addEventListener("keyup", function(e){
 });
 
 function move() {
-    const friction = 0.1;
 
     if (input.keys.LEFT)
         b.acc.x = -b.acceleration;
@@ -167,31 +216,43 @@ function move() {
         b.acc.x = 0;
     if (!input.keys.DOWN && !input.keys.UP)
         b.acc.y = 0;
-
-    b.acc = b.acc.normalized().multiply(b.acceleration);
-    b.vel = b.vel.add(b.acc);
-    b.vel = b.vel.multiply(1-friction);
-    b.pos = b.pos.add(b.vel);
 }
 
 function mainloop() {
 
     ctx.clearRect(0, 0, canvas.clientWidth, canvas.clientHeight);
     move();
-    b.draw();
 
-    Ball.balls.forEach(element => {
+    Ball.balls.forEach((element, index) => {
+
+        for (let i = index + 1; i < Ball.balls.length; i++)
+            if (ballCollision(element, Ball.balls[i])) {
+                ballCollisionResponse(element, Ball.balls[i]);
+                ballCollisionResolution(element, Ball.balls[i]);
+            }
+        
+        keepBallInBounds(element);
+
+        element.reposition();
+
         element.draw();
-        element.displayMovement();
     });
 
-    if (ballCollision(b, b2))
-        ballCollisionResponse(b, b2);
+    Ball.balls[0].displayMovement();
 
     requestAnimationFrame(mainloop);
 }
 
-const b = new Ball(100, 100, 30, "rgb(123, 50, 255)");
-const b2 = new Ball(200, 150, 15, "rgb(123, 50, 255)");
+const b = new Ball(100, 100, 30, "rgb(0, 0, 0)");
+const bCount = 25;
+const bSize = new Vector2(10, 50);
+for (let i = 0; i < bCount; i++) {
+    const tempR = Math.floor(bSize.x + Math.random() * (bSize.y - bSize.x + 1));
+    const tempX = Math.floor(tempR + Math.random() * (canvas.clientWidth - tempR + 1));
+    const tempY = Math.floor(tempR + Math.random() * (canvas.clientHeight - tempR + 1));
+    new Ball(tempX, tempY, tempR, "rgb(123, 50, 255)");
+}
 
 requestAnimationFrame(mainloop);
+
+// ================================================ ##
