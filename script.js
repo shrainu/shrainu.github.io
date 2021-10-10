@@ -4,21 +4,37 @@ function mailtome() {
 }
 
 // Game
+function round(number, precision) {
+    let factor = 10**precision;
+    return Math.round(number * factor) / factor;
+}
+
+function ballCollision(b1, b2) {
+    if (b1.r + b2.r >= b2.pos.subtract(b1.pos).mag())
+        return true;
+    return false; 
+}
+
+function ballCollisionResponse(b1, b2) {
+     
+    let distanceVec = b1.pos.subtract(b2.pos);
+    let collisionDepth = b1.r + b2.r - distanceVec.mag();
+    let collisionResponse = distanceVec.normalized().multiply(collisionDepth / 2);
+    b1.pos = b1.pos.add(collisionResponse);
+    b2.pos = b2.pos.add(collisionResponse.multiply(-1));
+}
+
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 
-const ball = {
-
-    x : 120,
-    y : 120,
-
+const input = {
     keys : {
         LEFT : false,
         RIGHT : false,
         UP : false,
         DOWN : false,
     }
-};
+}
 
 class Vector2 {
 
@@ -69,10 +85,9 @@ class Ball {
 
     constructor(x, y, r, color) {
 
-        this.x = x;
-        this.y = y;
         this.r = r;
         this.color = color;
+        this.pos = new Vector2(x, y);
         this.vel = new Vector2(0, 0);
         this.acc = new Vector2(0, 0);
         this.acceleration = 2;
@@ -83,7 +98,7 @@ class Ball {
     draw() {
 
         ctx.beginPath();
-        ctx.arc(this.x, this.y, this.r, 0, 2 * Math.PI);
+        ctx.arc(this.pos.x, this.pos.y, this.r, 0, 2 * Math.PI);
         ctx.fillStyle = this.color;
         ctx.fill();
         ctx.strokeStyle = this.color;
@@ -92,10 +107,15 @@ class Ball {
 
     displayMovement() {
 
-        this.vel.drawVector(450, 400, 10, "green");
-        this.acc.normalized().drawVector(450, 400, 50, "red");
+        const margin = 5;
+        const displayRadius = 50
+        const center = new Vector2(canvas.clientWidth - displayRadius - margin, 
+                                   canvas.clientHeight - displayRadius - margin);
+
+        this.vel.drawVector(center.x, center.y, 10, "green");
+        this.acc.normalized().drawVector(center.x, center.y, displayRadius, "red");
         ctx.beginPath();
-        ctx.arc(450, 400, 50, 0, 2 * Math.PI);
+        ctx.arc(center.x, center.y, displayRadius, 0, 2 * Math.PI);
         ctx.strokeStyle = "black";
         ctx.stroke();
     }
@@ -103,57 +123,55 @@ class Ball {
 
 canvas.addEventListener("keydown", function(e){
     if (e.keyCode == 65) {
-        ball.keys.LEFT = true;
+        input.keys.LEFT = true;
     }
     if (e.keyCode == 68) {
-        ball.keys.RIGHT = true;
+        input.keys.RIGHT = true;
     }
     if (e.keyCode == 87) {
-        ball.keys.UP = true;
+        input.keys.UP = true;
     }
     if (e.keyCode == 83) {
-        ball.keys.DOWN = true;
+        input.keys.DOWN = true;
     }
 });
 
 canvas.addEventListener("keyup", function(e){
     if (e.keyCode == 65) {
-        ball.keys.LEFT = false;
+        input.keys.LEFT = false;
     }
     if (e.keyCode == 68) {
-        ball.keys.RIGHT = false;
+        input.keys.RIGHT = false;
     }
     if (e.keyCode == 87) {
-        ball.keys.UP = false;
+        input.keys.UP = false;
     }
     if (e.keyCode == 83) {
-        ball.keys.DOWN = false;
+        input.keys.DOWN = false;
     }
 });
 
 function move() {
     const friction = 0.1;
 
-    if (ball.keys.LEFT)
+    if (input.keys.LEFT)
         b.acc.x = -b.acceleration;
-    if (ball.keys.RIGHT)
+    if (input.keys.RIGHT)
         b.acc.x = +b.acceleration;
-    if (ball.keys.UP)
+    if (input.keys.UP)
         b.acc.y = -b.acceleration;
-    if (ball.keys.DOWN)
+    if (input.keys.DOWN)
         b.acc.y = +b.acceleration;
     
-    if (!ball.keys.LEFT && !ball.keys.RIGHT)
+    if (!input.keys.LEFT && !input.keys.RIGHT)
         b.acc.x = 0;
-    if (!ball.keys.DOWN && !ball.keys.UP)
+    if (!input.keys.DOWN && !input.keys.UP)
         b.acc.y = 0;
 
     b.acc = b.acc.normalized().multiply(b.acceleration);
     b.vel = b.vel.add(b.acc);
     b.vel = b.vel.multiply(1-friction);
-
-    b.x += b.vel.x;
-    b.y += b.vel.y;
+    b.pos = b.pos.add(b.vel);
 }
 
 function mainloop() {
@@ -166,6 +184,9 @@ function mainloop() {
         element.draw();
         element.displayMovement();
     });
+
+    if (ballCollision(b, b2))
+        ballCollisionResponse(b, b2);
 
     requestAnimationFrame(mainloop);
 }

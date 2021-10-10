@@ -63,9 +63,11 @@ nav div {
 
 
 ul#horizontal-list {
+    display: flex; /* Delete to align left */
+    justify-content: space-evenly; /* Delete to align left */
     list-style: none;
     margin: auto 0;
-    margin-left: -30px;
+    margin-left: -25px; /* Might aswell decrease to -30 after aligned left */
     padding-top: 5px;
     padding-bottom: 5px;
 }
