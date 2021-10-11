@@ -17,7 +17,6 @@ const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 // Physics
 const friction = 0.1;
-const elasticity = 1;
 // Input
 const input = {
     keys : {
@@ -54,7 +53,7 @@ function ballCollisionResolution(b1, b2) {
     let normal = b1.pos.subtract(b2.pos).normalized();
     let relVel = b1.vel.subtract(b2.vel);
     let sepVel = Vector2.dot(relVel, normal);
-    let newSepVel = -sepVel * elasticity;
+    let newSepVel = -sepVel * Math.min(b1.elasticity, b2.elasticity);
 
     let velSepDiff = newSepVel - sepVel;
     let impulse = velSepDiff / (b1.invMass + b2.invMass);
@@ -64,15 +63,40 @@ function ballCollisionResolution(b1, b2) {
     b2.vel = b2.vel.add(impulseVec.multiply(-b2.invMass));
 }
 
-function keepBallInBounds(element) {
-    if (element.pos.x + element.r > canvas.clientWidth)
-        element.pos.x = canvas.clientWidth - element.r;
-    else if (element.pos.x - element.r < 0)
-        element.pos.x = element.r;
-    if (element.pos.y + element.r > canvas.clientHeight)
-        element.pos.y = canvas.clientHeight - element.r;
-    else if (element.pos.y - element.r < 0)
-        element.pos.y = element.r;
+function ballToWallClosestPoint(b, w) {
+    const ballToWallStart = w.start.subtract(b.pos);
+    if (Vector2.dot(w.wallUnit(), ballToWallStart) > 0)
+        return w.start;
+    
+    const wallEndToBall = b.pos.subtract(w.end);
+    if (Vector2.dot(w.wallUnit(), wallEndToBall) > 0)
+        return w.end;
+
+    let closestDist = Vector2.dot(w.wallUnit(), ballToWallStart);
+    let closestVect = w.wallUnit().multiply(closestDist);
+    return w.start.subtract(closestVect);
+}
+
+function ballToWallCollisionDetection(b, w) {
+
+    const ballToClosest = ballToWallClosestPoint(b, w).subtract(b.pos);
+    if (ballToClosest.mag() <= b.r)
+        return true;
+
+    return false;
+}
+
+function ballToWallCollisionResponse(b, w) {
+    let collVec = b.pos.subtract(ballToWallClosestPoint(b, w));
+    b.pos = b.pos.add(collVec.normalized().multiply(b.r - collVec.mag()));
+}
+
+function ballToWallCollisionResolution(b, w) {
+    let normal = b.pos.subtract(ballToWallClosestPoint(b, w)).normalized();
+    let sepVel = Vector2.dot(b.vel, normal);
+    let newSepVel = -sepVel * b.elasticity;
+    let vSepDiff = sepVel - newSepVel;
+    b.vel = b.vel.add(normal.multiply(-vSepDiff));
 }
 
 class Vector2 {
@@ -118,6 +142,29 @@ class Vector2 {
     }
 }
 
+class Wall {
+
+    static walls = [];
+
+    constructor(startX, startY, endX, endY) {
+        this.start = new Vector2(startX, startY);
+        this.end = new Vector2(endX, endY);
+        Wall.walls.push(this);
+    }
+
+    draw() {
+        ctx.beginPath();
+        ctx.moveTo(this.start.x, this.start.y);
+        ctx.lineTo(this.end.x, this.end.y);
+        ctx.strokeStyle = "white";
+        ctx.stroke();
+    }
+
+    wallUnit() {
+        return this.end.subtract(this.start).normalized();
+    }
+}
+
 class Ball {
 
     static balls = [];
@@ -131,6 +178,7 @@ class Ball {
         this.acc = new Vector2(0, 0);
         this.acceleration = 1.5;
 
+        this.elasticity = 1;
         this.mass = (mass < 0) ? (r ** 2) / 10 : mass;
         this.invMass = (mass == 0) ? 0 : 1 / this.mass;
 
@@ -220,31 +268,54 @@ function move() {
 
 function mainloop() {
 
+    // Clear the Canvas
     ctx.clearRect(0, 0, canvas.clientWidth, canvas.clientHeight);
+
+    // Move the ball controlled by player
     move();
 
     Ball.balls.forEach((element, index) => {
 
+        // Collision Detection / Response between balls and walls
+        Wall.walls.forEach(wall => {
+
+            if (ballToWallCollisionDetection(element, wall)) {
+                ballToWallCollisionResponse(element, wall);
+                ballToWallCollisionResolution(element, wall);
+            }
+        })
+
+        // Collision detection / Response / Resolution between balls
         for (let i = index + 1; i < Ball.balls.length; i++)
             if (ballCollision(element, Ball.balls[i])) {
                 ballCollisionResponse(element, Ball.balls[i]);
                 ballCollisionResolution(element, Ball.balls[i]);
             }
-        
-        keepBallInBounds(element);
 
+        // Apply physics to ball
         element.reposition();
-
+    });
+    
+    // Draw the balls
+    Ball.balls.forEach(element => {
+        element.draw();
+    })
+    // Draw the walls
+    Wall.walls.forEach(element => {
         element.draw();
     });
 
+    // Draw the player movement indicator
     Ball.balls[0].displayMovement();
 
     requestAnimationFrame(mainloop);
 }
 
+// Player
 const b = new Ball(100, 100, 30, "rgb(0, 0, 0)");
-const bCount = 25;
+
+// Random generated balls
+const bCount = 5;
 const bSize = new Vector2(10, 50);
 for (let i = 0; i < bCount; i++) {
     const tempR = Math.floor(bSize.x + Math.random() * (bSize.y - bSize.x + 1));
@@ -252,6 +323,15 @@ for (let i = 0; i < bCount; i++) {
     const tempY = Math.floor(tempR + Math.random() * (canvas.clientHeight - tempR + 1));
     new Ball(tempX, tempY, tempR, "rgb(123, 50, 255)");
 }
+
+// Walls
+const w = new Wall(100, 100, 250, 300);
+
+// Edges
+const edgeLeft = new Wall(0, 0, 0, canvas.clientHeight);
+const edgeRight = new Wall(canvas.clientWidth, 0, canvas.clientWidth, canvas.clientHeight);
+const edgeTop = new Wall(0, 0, canvas.clientWidth, 0);
+const edgeBottom = new Wall(0, canvas.clientHeight, canvas.clientWidth, canvas.clientHeight);
 
 requestAnimationFrame(mainloop);
 

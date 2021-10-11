@@ -62,6 +62,12 @@ nav div {
 }
 
 
+div.vertical-line {
+    display: inline;
+    border-left: 1px solid rgb(231, 192, 231);
+}
+
+
 ul#horizontal-list {
     display: flex; /* Delete to align left */
     justify-content: space-evenly; /* Delete to align left */
