@@ -1,4 +1,5 @@
 # Shrain's Github Page
 
- Hi, as you can see this is my github page. I have no idea about what I'll put here but, 
- I guess I'll evetually figure something out.
+ Hi, as you can see this is my github page. Here I post articles and tutorials about programming,
+ and share some of my games. Currently I'm working on a Pyhsics Game, you can try it from the game
+ section of the website.
