@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../style.css">
+    <title>Shrain | How to use Modern OpenGL on M1 Mac</title>
+</head>
+<body>
+    <header class="main-title">
+        <h1> Shrain </h1>
+    </header>
+    <nav>
+        <div>
+            <ul id="horizontal-list">
+                <li>
+                    <a href="../index.html">Home</a>
+                </li>
+                <li>
+                    <div class="vertical-line"></div>
+                </li>
+                <li>
+                    <a href="../physics-game.html">Game</a>
+                </li>
+                <li>
+                    <div class="vertical-line"></div>
+                </li>
+                <li>
+                    <a href="">About</a>
+                </li>
+                <li>
+                    <div class="vertical-line"></div>
+                </li>
+                <li>
+                    <a href="#contact">Contact</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+    <main>
+        <div class="article-header">
+            <h2>How to use Modern OpenGL on M1 Mac</h2>
+            <p class="date">12.10.2021</p>
+        </div>
+        <article class="article">
+            <p class="pos">
+                Last year Apple released their first M1 Macbooks, since then resources about how to to use certain libraries and 
+                frameworks is increased alot. I've been using a M1 Macbook Air for 4 months now. Of course gettings things
+                work is not easy as in a Windows machine, but its not that big of a deal. Most of the stuff already supports M1 Macs, 
+                and even if they don't its not so hard to get it working.
+            </p>   
+            <p>
+                When it comes to using CMake and makefiles I'm not the best out there, in fact I'm quite bad, so I tough that there 
+                might be some people like me who struggle to get modern OpenGL working on M1 architecture. Before starting just to make 
+                it clear, I'm not guaranteeing anything, but if you follow the steps correctly I don't see any reason for this to 
+                not work. If it doesn't work, don't hesitate to contact me. I'll be happy to help in any way that I can.
+            </p>
+            <p>
+                I'm using <a target="_blank" href="https://www.jetbrains.com/clion/">CLion IDE</a>, <strong>since Clion is using CMake this 
+                article is heavily focused around CMake</strong>, but with this article, and a bit of search you should be able to get it 
+                working in also XCode. For the rest of this article I'll assume that you have either <a target="_blank" href="https://cmake.org/">CMake</a> or 
+                <a target="_blank" href="https://www.jetbrains.com/clion/">CLion</a> installed. Before we start you need to install 
+                <strong>homebrew</strong>, you can downloand it from <a target="_blank" href="https://brew.sh/">this link</a>.
+            </p>
+            <p>
+                First of all we need <strong>glfw3</strong>, and luckily there is <strong>arm64</strong> native binaries of glfw3 in homebrew. 
+                We are going to install glfw3 by typing this line in our terminal.
+            </p>
+            <article class="code terminal">
+                <p>
+                    > brew install glfw
+                </p>
+            </article>
+            <p>
+                After installation completed, we are going to install GLEW. I'll be only using GLEW for this tutorial since there are no 
+                big differences between GLEW, GLAD etc. If you're planning on using something else feel free to do so. We are going to install
+                GLEW by typing this in our terminal.
+            </p>
+            <article class="code terminal">
+                <p>
+                    > brew install glew
+                </p>
+            </article>
+            <p>
+                Now we have everything we need we can start writing our CMakeLists.txt. If you're using CLion just create a new CLion project and 
+                start editing the CMakeLists.txt file as I've shown down below, even if you're not using CLion and using CMake only process is same.
+            </p>
+            <article class="code">
+                <p>
+                    <span class="c-blue">cmake_minimum_required</span>(<span class="c-green">VERSION</span> 3.20)<br>
+                    <span class="s-cmake-comment">
+                        # Change <strong>template</strong> to your own project name <br>
+                    </span>
+                    <span class="c-blue">project</span>(template)<br>
+                    <br>
+                    <span class="c-blue">set</span>(CMAKE_CXX_STANDART 14)<br>
+                    <br>
+                    <span class="s-cmake-comment">
+                        # Version numbers might change in the future check your folder <br>
+                        # names you can go to these folders using <strong>command + g</strong> and typing  <br>
+                        # <strong>/opt/homebrew</strong> while you are in finder <br>
+                    </span>
+                    <span class="c-blue">include_directories</span>(/opt/homebrew/Cellar/glew/2.2.0_1/include)<br>
+                    <span class="c-blue">include_directories</span>(/opt/homebrew/Cellar/glfw/3.3.4/include)<br>
+                    <span class="c-blue">link_directories</span>(/opt/homebrew/Cellar/glew/2.2.0_1/lib)<br>
+                    <span class="c-blue">link_directories</span>(/opt/homebrew/Cellar/glfw/3.3.4/lib)<br>
+                    <br>
+                    <span class="s-cmake-comment">
+                        # We include our source files here <br>
+                    </span>
+                    <span class="c-blue">add_executable</span>(template main.cpp)<br>
+                    <br>
+                    <span class="s-cmake-comment">
+                        # Link the necessary libraries <br>
+                    </span>
+                    <span class="c-blue">find_package</span>(OpenGL <span class="c-green">REQUIRED</span>)<br>
+                    <span class="c-blue">target_link_libraries</span>(template <span class="c-green">PRIVATE</span> OpenGL::GL)<br>
+                    <span class="c-blue">find_package</span>(glfw3 <span class="c-green">REQUIRED</span>)<br>
+                    <span class="c-blue">target_link_libraries</span>(template <span class="c-green">PRIVATE</span> glfw.3.3)<br>
+                    <span class="c-blue">find_package</span>(GLEW <span class="c-green">REQUIRED</span>)<br>
+                    <span class="c-blue">target_link_libraries</span>(template <span class="c-green">PRIVATE</span> GLEW)<br>
+                </p>
+            </article>
+            <p>
+                Most of the stuff here is pretty self explanatory, only thing that we need to clarify here is the include and library folder names,
+                since they might change in the future versions. If you have any problem while compiling check the folders in your own computer, and
+                change the include and library paths acording to them.
+            </p>
+            <p>
+                If you followed all the steps correctly you should be good to go. I hope this article helped you to get started with Modern OpenGL on 
+                M1 Mac. If you have any questions or problems feel free to contact me from <strong>batuhanyigit1705@gmail.com</strong>, I'll try to 
+                answer and help you as soon as I can.
+            </p>
+        </article>
+    </main>
+    <footer>
+        <div class="footer-div">
+            <h2>Social Media</h2>
+            <a target="_blank" href="https://twitter.com/shrainu">Twitter</a>
+        </div>
+        <div class="footer-div">
+            <h2>Useful Links</h2>
+            <a href="../physics-game.html">Game</a>
+            <a href="">About</a>
+            <a target="_blank" href="https://github.com/shrainu">My Github</a>
+        </div>
+        <div class="footer-div" id="contact">
+            <h2>Contact</h2>
+            <p onclick="mailtome()">batuhanyigit1705@gmail.com</p>
+        </div>
+    </footer>
+    <script src="../utility.js"></script>
+</body>
+</html>

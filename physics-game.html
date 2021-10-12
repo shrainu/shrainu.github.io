@@ -5,9 +5,9 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="./style.css">
-    <title>Shrain | Home</title>
+    <title>Shrain | Physics Game</title>
 </head>
-<body class="short-body">
+<body>
     <header class="main-title">
         <h1> Shrain </h1>
     </header>
@@ -39,22 +39,7 @@
         </div>
     </nav>
     <main>
-        <article class="post">
-            <h2>How to use Modern OpenGL on M1 Mac</h2>
-            <p class="text-only-post">
-                Last year Apple released their first M1 Macbooks, since then resources about how to to use certain libraries and 
-                frameworks is increased alot. I've been using an M1 Macbook Air for 4 months now, of course gettings things
-                work is not easy as in a Windows machine, but its not that hard, most of the stuff already supports M1 mac and even
-                if they don't its not so hard to get it working.
-                <br/>
-                <br/>
-                When it comes to using CMake and makefiles I'm not the best out there, in fact I'm quite bad, so I tough that there 
-                might be some people like me who struggle to get modern OpenGL working on M1 architecture. 
-                <span class="transparent-text"><a href="./posts/openGLonM1mac.html">Before starting just to make it cl...</a></span>
-            </p>
-            <p class="date"">12.10.2021</p>
-            <a class="read-rest" href="./posts/openGLonM1mac.html">Read article</a>
-        </article>
+        <canvas id="canvas" tabindex=0 width="640" height="480"></canvas>
     </main>
     <footer>
         <div class="footer-div">
@@ -67,11 +52,12 @@
             <a href="">About</a>
             <a target="_blank" href="https://github.com/shrainu">My Github</a>
         </div>
-        <div class="footer-div" id="contact">
-            <h2>Contact</h2>
+        <div class="footer-div">
+            <h2 id="contact">Contact</h2>
             <p onclick="mailtome()">batuhanyigit1705@gmail.com</p>
         </div>
     </footer>
+    <script src="script.js"></script>
     <script src="./utility.js"></script>
 </body>
 </html>
