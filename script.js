@@ -14,6 +14,8 @@ const input = {
         RIGHT : false,
         UP : false,
         DOWN : false,
+        Q : false,
+        E : false
     }
 }
 
@@ -21,6 +23,15 @@ const input = {
 function round(number, precision) {
     let factor = 10**precision;
     return Math.round(number * factor) / factor;
+}
+
+function rotMx(angle) {
+    let mx = new Matrix(2, 2);
+    mx.data[0][0] =  Math.cos(angle);
+    mx.data[0][1] = -Math.sin(angle);
+    mx.data[1][0] =  Math.sin(angle);
+    mx.data[1][1] =  Math.cos(angle);
+    return mx;
 }
 
 function ballCollision(b1, b2) {
@@ -89,6 +100,29 @@ function ballToWallCollisionResolution(b, w) {
     b.vel = b.vel.add(normal.multiply(-vSepDiff));
 }
 
+class Matrix {
+
+    constructor(rows, cols) {
+
+        this.rows = rows;
+        this.cols = cols;
+        this.data = [];
+
+        for (let i = 0; i < rows; i++) {
+            this.data[i] = [];
+            for(let j = 0; j < cols; j++)
+                this.data[i][j] = 0;
+        }
+    }
+
+    multiplyVec(vec) {
+        let result = new Vector2(0, 0);
+        result.x = this.data[0][0] * vec.x + this.data[0][1] * vec.y;
+        result.y = this.data[1][0] * vec.x + this.data[1][1] * vec.y;
+        return result;
+    }
+}
+
 class Vector2 {
 
     constructor(x, y) {
@@ -122,6 +156,10 @@ class Vector2 {
         return vec1.x * vec2.x + vec1.y * vec2.y;
     }
 
+    static cross(vec1, vec2) {
+        return vec1.x * vec2.y - vec1.y * vec2.a;
+    }
+
     drawVector(startX, startY, n, color) {
 
         ctx.beginPath();
@@ -137,17 +175,47 @@ class Wall {
     static walls = [];
 
     constructor(startX, startY, endX, endY) {
+
         this.start = new Vector2(startX, startY);
         this.end = new Vector2(endX, endY);
+        this.center = this.start.add(this.end).multiply(0.5);
+        this.length = this.end.subtract(this.start).mag();
+
+        this.refStart = new Vector2(startX, startY);
+        this.refEnd = new Vector2(endX, endY);
+        this.refUnit = this.end.subtract(this.start).normalized();
+
+        this.angleVel = 0;
+        this.angle = 0;
+
         Wall.walls.push(this);
     }
 
     draw() {
+        let rotMat = rotMx(this.angle);
+        let newDir = rotMat.multiplyVec(this.refUnit);
+        this.start = this.center.add(newDir.multiply(-this.length / 2));
+        this.end   = this.center.add(newDir.multiply( this.length / 2));
+
         ctx.beginPath();
         ctx.moveTo(this.start.x, this.start.y);
         ctx.lineTo(this.end.x, this.end.y);
         ctx.strokeStyle = "white";
         ctx.stroke();
+    }
+
+    keyInput() {
+
+        if (input.keys.Q)
+            this.angleVel = -0.05;
+        if (input.keys.E)
+            this.angleVel = +0.05;
+    }
+
+    reposition() {
+
+        this.angle += this.angleVel;
+        this.angleVel *= 0.98;
     }
 
     wallUnit() {
@@ -209,34 +277,108 @@ class Ball {
     }
 }
 
+class Capsule {
+
+    static capsules = []
+
+    constructor(startX, startY, endX, endY, r) {
+
+        this.start = new Vector2(startX, startY);
+        this.end   = new Vector2(endX, endY);
+        this.r = r;
+    
+        this.refDir = this.end.subtract(this.start).normalized();
+        this.refAngle = Math.acos(Vector2.dot(this.refDir, new Vector2(1,0)));
+        if (Vector2.cross(this.refDir, new Vector2(1, 0)) > 0)
+            this.refAngle *= -1;
+        
+        this.angle = 0;
+        this.angVel = 0;
+
+        this.acceleration = 1;
+        this.acc = new Vector2(0, 0);
+        this.vel = new Vector2(0, 0);
+        this.pos = this.start.add(this.end).multiply(0.5);
+        this.dir = this.end.subtract(this.start).normalized();
+        this.length = this.end.subtract(this.start).mag();
+
+        Capsule.capsules.push(this);
+    }
+
+    draw() {
+
+        ctx.beginPath();
+        ctx.arc(this.start.x, this.start.y, this.r, this.refAngle + this.angle + Math.PI / 2, this.refAngle + this.angle + 3 * Math.PI / 2);
+        ctx.arc(this.end.x, this.end.y, this.r, this.refAngle + this.angle - Math.PI / 2, this.refAngle + this.angle + Math.PI / 2);
+        ctx.closePath();
+        ctx.fillStyle = "black";
+        ctx.fill();
+        ctx.strokeStyle = "white";
+        ctx.stroke();
+    }
+
+    keyInput() {
+
+        if (input.keys.UP)
+            this.acc = this.dir.multiply(-this.acceleration);
+        if (input.keys.DOWN)
+            this.acc = this.dir.multiply(this.acceleration);
+        if (!input.keys.UP && !input.keys.DOWN)
+            this.acc = new Vector2(0, 0);
+
+        if (input.keys.LEFT)
+            this.angVel = -0.05;
+        if (input.keys.RIGHT)
+            this.angVel = +0.05;
+    }
+
+    reposition() {
+
+        this.acc = this.acc.normalized().multiply(this.acceleration);
+        this.vel = this.vel.add(this.acc);
+        this.vel = this.vel.multiply(1-friction);
+        this.pos = this.pos.add(this.vel);
+
+        this.angle += this.angVel;
+        this.angVel *= 0.90;
+        let rotMat = rotMx(this.angle);
+        this.dir = rotMat.multiplyVec(this.refDir);
+
+        this.start = this.pos.add(this.dir.multiply(-this.length / 2))
+        this.end = this.pos.add(this.dir.multiply(this.length / 2))
+    }
+}
+
 canvas.addEventListener("keydown", function(e){
-    if (e.keyCode == 65) {
+    if (e.keyCode == 65) // A
         input.keys.LEFT = true;
-    }
-    if (e.keyCode == 68) {
+    if (e.keyCode == 68) // D
         input.keys.RIGHT = true;
-    }
-    if (e.keyCode == 87) {
+    if (e.keyCode == 87) // W
         input.keys.UP = true;
-    }
-    if (e.keyCode == 83) {
+    if (e.keyCode == 83) // S
         input.keys.DOWN = true;
-    }
+
+    if (e.keyCode == 81) // Q
+        input.keys.Q = true;
+    if (e.keyCode == 69) // E
+        input.keys.E = true;
 });
 
 canvas.addEventListener("keyup", function(e){
-    if (e.keyCode == 65) {
+    if (e.keyCode == 65) // A
         input.keys.LEFT = false;
-    }
-    if (e.keyCode == 68) {
+    if (e.keyCode == 68) // D
         input.keys.RIGHT = false;
-    }
-    if (e.keyCode == 87) {
+    if (e.keyCode == 87) // W
         input.keys.UP = false;
-    }
-    if (e.keyCode == 83) {
+    if (e.keyCode == 83) // S
         input.keys.DOWN = false;
-    }
+
+    if (e.keyCode == 81) // Q
+        input.keys.Q = false;
+    if (e.keyCode == 69) // E
+        input.keys.E = false;
 });
 
 function move() {
@@ -264,6 +406,13 @@ function mainloop() {
     // Move the ball controlled by player
     move();
 
+    // Control the wall
+    w.keyInput();
+    w.reposition();
+
+    // Control the capsule
+    cap.keyInput();
+
     Ball.balls.forEach((element, index) => {
 
         // Collision Detection / Response between balls and walls
@@ -285,13 +434,20 @@ function mainloop() {
         // Apply physics to ball
         element.reposition();
     });
-    
+
+    // Reposition the capsule
+    cap.reposition();
+
     // Draw the balls
     Ball.balls.forEach(element => {
         element.draw();
     })
     // Draw the walls
     Wall.walls.forEach(element => {
+        element.draw();
+    });
+    // Draw the walls
+    Capsule.capsules.forEach(element => {
         element.draw();
     });
 
@@ -305,7 +461,7 @@ function mainloop() {
 const b = new Ball(100, 100, 30, "rgb(0, 0, 0)");
 
 // Random generated balls
-const bCount = 5;
+const bCount = 10;
 const bSize = new Vector2(10, 50);
 for (let i = 0; i < bCount; i++) {
     const tempR = Math.floor(bSize.x + Math.random() * (bSize.y - bSize.x + 1));
@@ -313,6 +469,9 @@ for (let i = 0; i < bCount; i++) {
     const tempY = Math.floor(tempR + Math.random() * (canvas.clientHeight - tempR + 1));
     new Ball(tempX, tempY, tempR, "rgb(123, 50, 255)");
 }
+
+// Capsule
+const cap = new Capsule(200, 300, 280, 300, 40);
 
 // Walls
 const w = new Wall(100, 100, 250, 300);
